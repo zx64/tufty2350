@@ -87,6 +87,12 @@ mp_obj_t st7789_set_mode(mp_obj_t self_in, mp_obj_t mode_in) {
     return mp_const_none;
 }
 
+mp_obj_t st7789_set_rawmode(mp_obj_t self_in, mp_obj_t mode_in) {
+    (void)self_in;
+    display->set_rawmode(mp_obj_is_true(mode_in));
+    return mp_const_none;
+}
+
 mp_obj_t st7789_set_vsync(mp_obj_t self_in, mp_obj_t sync_in) {
     (void)self_in;
     display->set_vsync(mp_obj_is_true(sync_in));
