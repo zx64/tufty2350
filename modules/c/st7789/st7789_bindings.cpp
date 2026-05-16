@@ -103,9 +103,18 @@ mp_obj_t st7789_set_vsync(mp_obj_t self_in, mp_obj_t sync_in) {
 mp_int_t st7789_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_uint_t flags) {
     (void)self_in;
     (void)flags;
-    bufinfo->buf = display->get_framebuffer();
-    bufinfo->len = 320 * 240 * 4;
-    bufinfo->typecode = 'B';
+    if (display->get_rawmode())
+    {
+        bufinfo->buf = ((uint8_t*)display->get_framebuffer()) + display->get_framebuffer_offset();
+        bufinfo->len = 320 * 240 * 2;
+        bufinfo->typecode = 'B';
+    }
+    else
+    {
+        bufinfo->buf = display->get_framebuffer();
+        bufinfo->len = 320 * 240 * 4;
+        bufinfo->typecode = 'B';
+    }
     return 0;
 }
 
