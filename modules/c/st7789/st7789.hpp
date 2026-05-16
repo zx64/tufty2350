@@ -31,6 +31,7 @@ namespace pimoroni {
     int fullres_height = 240;
     bool fullres_mode = false;
     bool rawmode = false;
+    ptrdiff_t framebuffer_offset = 0;
 
     // interface pins
     uint cs = 27;
@@ -119,6 +120,7 @@ namespace pimoroni {
     bool get_mode();
     bool get_rawmode();
     uint32_t *get_framebuffer();
+    ptrdiff_t get_framebuffer_offset();
     void command(uint8_t command, size_t len = 0, const char *data = NULL);
     void set_max_pio_clock(uint32_t hz);
     void set_vsync(bool sync);

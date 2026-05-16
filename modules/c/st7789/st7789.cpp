@@ -144,6 +144,10 @@ namespace pimoroni {
     return framebuffer;
   }
 
+  ptrdiff_t ST7789::get_framebuffer_offset() {
+    return framebuffer_offset;
+  }
+
   static inline volatile void pio_sm_block_until_stalled(PIO pio, uint sm) {
     uint32_t sm_stall_mask = 1u << (sm + PIO_FDEBUG_TXSTALL_LSB);
     pio->fdebug = sm_stall_mask;
@@ -212,14 +216,16 @@ namespace pimoroni {
     write_blocking(&cmd, 1);
     gpio_put(dc, 1); // data mode
 
-    // Take an "a" and a "b" pointer into the linebuffer, we will swap between
-    // these, converting pixels into one while the other is DMA'd to the screen.
-    uint16_t *buf_a = linebuffer;
-    uint16_t *buf_b = linebuffer + 240 * 2;
-
     if(rawmode) {
-        write_blocking((uint8_t*)framebuffer, 320*240*2);
+        uint8_t* ptr = (uint8_t*)(framebuffer) + framebuffer_offset;
+        framebuffer_offset = framebuffer_offset?0:320*240*2;
+        start_dma(ptr, 320*240*2);
     } else {
+        // Take an "a" and a "b" pointer into the linebuffer, we will swap between
+        // these, converting pixels into one while the other is DMA'd to the screen.
+        uint16_t *buf_a = linebuffer;
+        uint16_t *buf_b = linebuffer + 240 * 2;
+
         // The copy from framebuffer to linebuffer also serves to rotate the image
         // 90 degrees to match the scan orientation and prevent diagonal tearing.
         if(fullres_mode) {
