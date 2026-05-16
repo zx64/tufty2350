@@ -34,8 +34,6 @@ int mp_hal_is_pin_reserved(int n);
 // Alias the chip select pin specified by presto.h
 #define MICROPY_HW_PSRAM_CS_PIN                 BW_PSRAM_CS
 
-#define MICROPY_PY_THREAD                       (0)
-
 // Configure USB
 #define MICROPY_HW_USB_VID                      (0x2e8a)
 #define MICROPY_HW_USB_PID                      (0x1101)
