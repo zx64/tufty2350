@@ -5,3 +5,6 @@
     out pins, 8  side 0
     nop          side 1
 .wrap
+    out pins, 8  side 0
+PUBLIC wrap16:
+    nop          side 1

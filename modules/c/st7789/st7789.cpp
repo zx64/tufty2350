@@ -200,6 +200,7 @@ namespace pimoroni {
     }
 
     wait_for_dma();
+    configure_dma_for_pixels(false);
 
     // Wait for vsync
     if (use_vsync) {
@@ -216,10 +217,11 @@ namespace pimoroni {
     write_blocking(&cmd, 1);
     gpio_put(dc, 1); // data mode
 
+    configure_dma_for_pixels(true);
     if(rawmode) {
         uint8_t* ptr = (uint8_t*)(framebuffer) + framebuffer_offset;
         framebuffer_offset = framebuffer_offset?0:320*240*2;
-        start_dma(ptr, 320*240*2);
+        start_dma(ptr, 320 * 240);
     } else {
         // Take an "a" and a "b" pointer into the linebuffer, we will swap between
         // these, converting pixels into one while the other is DMA'd to the screen.
@@ -232,20 +234,20 @@ namespace pimoroni {
           for(int x = 0; x < fullres_width; x++) {
             for(int y = 0; y < fullres_height; y++) {
               uint32_t src = framebuffer[y * fullres_width + x];
-              buf_a[y] = __builtin_bswap16(((src & 0xf8) << 8) | ((src & 0xfc00) >> 5) | ((src & 0xf80000) >> 19));
+              buf_a[y] = (((src & 0xf8) << 8) | ((src & 0xfc00) >> 5) | ((src & 0xf80000) >> 19));
             }
             // Transfer a single full res (full 240 pixel height) column
             // In full-res we can "chase the beam" as it were, replacing pixels
             // behind the outgoing DMA transfer.
             wait_for_dma();
-            start_dma((uint8_t *)buf_a, fullres_height * 2);
+            start_dma((uint8_t *)buf_a, fullres_height);
             std::swap(buf_a, buf_b);
           }
         } else {
           for(int x = 0; x < width; x++) {
             for(int y = 0; y < height; y++) {
               uint32_t src = framebuffer[y * width + x];
-              uint16_t pixel = __builtin_bswap16(((src & 0xf8) << 8) | ((src & 0xfc00) >> 5) | ((src & 0xf80000) >> 19));
+              uint16_t pixel = (((src & 0xf8) << 8) | ((src & 0xfc00) >> 5) | ((src & 0xf80000) >> 19));
               buf_a[y * 2] = pixel;
               buf_a[y * 2 + 1] = pixel;
               // It's slightly faster to prepare to rows, rather than prepare
@@ -254,7 +256,7 @@ namespace pimoroni {
               buf_a[(height + y) * 2 + 1] = pixel;
             }
             wait_for_dma();
-            start_dma((uint8_t *)buf_a, fullres_height * 2 * 2);
+            start_dma((uint8_t *)buf_a, fullres_height * 2);
             std::swap(buf_a, buf_b);
           }
         }
@@ -296,6 +298,27 @@ namespace pimoroni {
     channel_config_set_bswap(&config, false);
     channel_config_set_dreq(&config, pio_get_dreq(parallel_pio, parallel_sm, true));
     dma_channel_configure(st_dma, &config, &parallel_pio->txf[parallel_sm], NULL, 0, false);
+  }
+
+  void ST7789::configure_dma_for_pixels(bool send_pixel_data) {
+    dma_channel_config dma_config = dma_get_channel_config(st_dma);
+    if (send_pixel_data)
+    {
+        channel_config_set_transfer_data_size(&dma_config, DMA_SIZE_16);
+        sm_config_set_out_shift(&sm_config, false, true, 16);
+        sm_config_set_wrap(&sm_config, parallel_offset + st7789_parallel_wrap_target, parallel_offset + st7789_parallel_offset_wrap16);
+        pio_sm_init(parallel_pio, parallel_sm, parallel_offset, &sm_config);
+        pio_sm_set_enabled(parallel_pio, parallel_sm, true);
+    }
+    else
+    {
+        channel_config_set_transfer_data_size(&dma_config, DMA_SIZE_8);
+        sm_config_set_out_shift(&sm_config, false, true, 8);
+        sm_config_set_wrap(&sm_config, parallel_offset + st7789_parallel_wrap_target, parallel_offset + st7789_parallel_wrap);
+        pio_sm_init(parallel_pio, parallel_sm, parallel_offset, &sm_config);
+        pio_sm_set_enabled(parallel_pio, parallel_sm, true);
+    }
+    dma_channel_configure(st_dma, &dma_config, &parallel_pio->txf[parallel_sm], NULL, 0, false);
   }
 
   void ST7789::set_max_pio_clock(uint32_t hz) {

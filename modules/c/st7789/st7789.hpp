@@ -46,6 +46,7 @@ namespace pimoroni {
     PIO parallel_pio = pio1;
     uint32_t startup_hz = 0;
     uint32_t max_pio_clk = 44 * MHZ;
+    pio_sm_config sm_config;
 
     // Regular commands
     uint parallel_sm;
@@ -78,17 +79,17 @@ namespace pimoroni {
       pio_sm_set_consecutive_pindirs(parallel_pio, parallel_sm, d0, 8, true);
       pio_sm_set_consecutive_pindirs(parallel_pio, parallel_sm, wr_sck, 1, true);
 
-      pio_sm_config c = st7789_parallel_program_get_default_config(parallel_offset);
-      sm_config_set_out_pins(&c, d0, 8);
-      sm_config_set_sideset_pins(&c, wr_sck);
-      sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
-      sm_config_set_out_shift(&c, false, true, 8);
+      sm_config = st7789_parallel_program_get_default_config(parallel_offset);
+      sm_config_set_out_pins(&sm_config, d0, 8);
+      sm_config_set_sideset_pins(&sm_config, wr_sck);
+      sm_config_set_fifo_join(&sm_config, PIO_FIFO_JOIN_TX);
+      sm_config_set_out_shift(&sm_config, false, true, 8);
 
       // Determine clock divider
       startup_hz = clock_get_hz(clk_sys);
-      sm_config_set_clkdiv(&c, ceil(2.f * fmax(1.0f, float(startup_hz) / max_pio_clk)) * 0.5f);
+      sm_config_set_clkdiv(&sm_config, ceil(2.f * fmax(1.0f, float(startup_hz) / max_pio_clk)) * 0.5f);
 
-      pio_sm_init(parallel_pio, parallel_sm, parallel_offset, &c);
+      pio_sm_init(parallel_pio, parallel_sm, parallel_offset, &sm_config);
       pio_sm_set_enabled(parallel_pio, parallel_sm, true);
 
       st_dma = dma_claim_unused_channel(true);
@@ -128,6 +129,7 @@ namespace pimoroni {
   private:
     void init();
     void configure_dma(bool enable_read_increment = true);
+    void configure_dma_for_pixels(bool send_pixel_data);
     inline void wait_for_dma(void);
     void write_blocking(const uint8_t *src, size_t len);
     void start_dma(const uint8_t *src, size_t len);
