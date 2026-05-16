@@ -30,6 +30,7 @@ namespace pimoroni {
     int fullres_width = 320;
     int fullres_height = 240;
     bool fullres_mode = false;
+    bool rawmode = false;
 
     // interface pins
     uint cs = 27;
@@ -114,7 +115,9 @@ namespace pimoroni {
     void update();
     void set_backlight(uint8_t brightness);
     void set_mode(bool mode);
+    void set_rawmode(bool rawmode);
     bool get_mode();
+    bool get_rawmode();
     uint32_t *get_framebuffer();
     void command(uint8_t command, size_t len = 0, const char *data = NULL);
     void set_max_pio_clock(uint32_t hz);

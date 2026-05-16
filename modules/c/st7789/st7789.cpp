@@ -217,37 +217,41 @@ namespace pimoroni {
     uint16_t *buf_a = linebuffer;
     uint16_t *buf_b = linebuffer + 240 * 2;
 
-    // The copy from framebuffer to linebuffer also serves to rotate the image
-    // 90 degrees to match the scan orientation and prevent diagonal tearing.
-    if(fullres_mode) {
-      for(int x = 0; x < fullres_width; x++) {
-        for(int y = 0; y < fullres_height; y++) {
-          uint32_t src = framebuffer[y * fullres_width + x];
-          buf_a[y] = __builtin_bswap16(((src & 0xf8) << 8) | ((src & 0xfc00) >> 5) | ((src & 0xf80000) >> 19));
-        }
-        // Transfer a single full res (full 240 pixel height) column
-        // In full-res we can "chase the beam" as it were, replacing pixels
-        // behind the outgoing DMA transfer.
-        wait_for_dma();
-        start_dma((uint8_t *)buf_a, fullres_height * 2);
-        std::swap(buf_a, buf_b);
-      }
+    if(rawmode) {
+        write_blocking((uint8_t*)framebuffer, 320*240*2);
     } else {
-      for(int x = 0; x < width; x++) {
-        for(int y = 0; y < height; y++) {
-          uint32_t src = framebuffer[y * width + x];
-          uint16_t pixel = __builtin_bswap16(((src & 0xf8) << 8) | ((src & 0xfc00) >> 5) | ((src & 0xf80000) >> 19));
-          buf_a[y * 2] = pixel;
-          buf_a[y * 2 + 1] = pixel;
-          // It's slightly faster to prepare to rows, rather than prepare
-          // a single row and copy it twice.
-          buf_a[(height + y) * 2] = pixel;
-          buf_a[(height + y) * 2 + 1] = pixel;
+        // The copy from framebuffer to linebuffer also serves to rotate the image
+        // 90 degrees to match the scan orientation and prevent diagonal tearing.
+        if(fullres_mode) {
+          for(int x = 0; x < fullres_width; x++) {
+            for(int y = 0; y < fullres_height; y++) {
+              uint32_t src = framebuffer[y * fullres_width + x];
+              buf_a[y] = __builtin_bswap16(((src & 0xf8) << 8) | ((src & 0xfc00) >> 5) | ((src & 0xf80000) >> 19));
+            }
+            // Transfer a single full res (full 240 pixel height) column
+            // In full-res we can "chase the beam" as it were, replacing pixels
+            // behind the outgoing DMA transfer.
+            wait_for_dma();
+            start_dma((uint8_t *)buf_a, fullres_height * 2);
+            std::swap(buf_a, buf_b);
+          }
+        } else {
+          for(int x = 0; x < width; x++) {
+            for(int y = 0; y < height; y++) {
+              uint32_t src = framebuffer[y * width + x];
+              uint16_t pixel = __builtin_bswap16(((src & 0xf8) << 8) | ((src & 0xfc00) >> 5) | ((src & 0xf80000) >> 19));
+              buf_a[y * 2] = pixel;
+              buf_a[y * 2 + 1] = pixel;
+              // It's slightly faster to prepare to rows, rather than prepare
+              // a single row and copy it twice.
+              buf_a[(height + y) * 2] = pixel;
+              buf_a[(height + y) * 2 + 1] = pixel;
+            }
+            wait_for_dma();
+            start_dma((uint8_t *)buf_a, fullres_height * 2 * 2);
+            std::swap(buf_a, buf_b);
+          }
         }
-        wait_for_dma();
-        start_dma((uint8_t *)buf_a, fullres_height * 2 * 2);
-        std::swap(buf_a, buf_b);
-      }
     }
 
     // Yeet the last column into the abyss and save a little time
@@ -261,6 +265,14 @@ namespace pimoroni {
 
   void ST7789::set_mode(bool mode) {
     this->fullres_mode = mode;
+  }
+
+  bool ST7789::get_rawmode() {
+    return this->rawmode;
+  }
+
+  void ST7789::set_rawmode(bool rawmode) {
+    this->rawmode = rawmode;
   }
 
   void ST7789::set_backlight(uint8_t brightness) {
