@@ -307,9 +307,8 @@ namespace pimoroni {
     return this->direct16;
   }
 
-  void ST7789::set_direct8(bool direct8, uint16_t* palette, uint16_t num_entries) {
-    wait_for_dma();
-    if (!direct8)
+  void ST7789::set_direct8(bool new_direct8, uint16_t* palette, uint16_t num_entries) {
+    if (!new_direct8)
     {
         this->direct8 = false;
         return;
@@ -318,6 +317,12 @@ namespace pimoroni {
     {
         this->direct16 = false;
     }
+    // Only time we need to wait for DMA is if we're reconfiguring the palette
+    if (this->direct8 && new_direct8)
+    {
+        wait_for_dma();
+    }
+
     this->direct8 = true;
     for (uint16_t idx = 0; idx < num_entries; ++idx)
     {
@@ -331,7 +336,6 @@ namespace pimoroni {
   }
 
   void ST7789::set_direct16(bool direct16) {
-    wait_for_dma();
     if (direct16 && this->direct8)
     {
         this->direct8 = false;
