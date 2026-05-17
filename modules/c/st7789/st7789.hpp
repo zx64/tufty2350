@@ -30,7 +30,7 @@ namespace pimoroni {
     int fullres_width = 320;
     int fullres_height = 240;
     bool fullres_mode = false;
-    bool rawmode = false;
+    bool direct16 = false;
     ptrdiff_t framebuffer_offset = 0;
 
     // interface pins
@@ -117,9 +117,9 @@ namespace pimoroni {
     void update();
     void set_backlight(uint8_t brightness);
     void set_mode(bool mode);
-    void set_rawmode(bool rawmode);
+    void set_direct16(bool direct16);
     bool get_mode();
-    bool get_rawmode();
+    bool get_direct16();
     uint32_t *get_framebuffer();
     ptrdiff_t get_framebuffer_offset();
     void command(uint8_t command, size_t len = 0, const char *data = NULL);
