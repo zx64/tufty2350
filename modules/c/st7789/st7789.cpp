@@ -221,18 +221,27 @@ namespace pimoroni {
 
     configure_dma_for_pixels(true);
     if(direct8) {
-        // TODO: Before adding special PIO code, just manually overwrite buffer with
-        // converted colours
-        uint8_t* start_ptr = (uint8_t*)(framebuffer) + framebuffer_offset;
-        uint32_t count = 320 * 240;
-        uint16_t* write_ptr = (uint16_t*)(start_ptr) + count - 1;
-        uint8_t* read_ptr = start_ptr + count - 1;
+        // In this mode, the framebuffer array is divided up into two regions
+        // [user half 320 * 240 * 2] [display half 320 * 240 * 2]
+        // The user half is read from but not written to by this code
+        // TODO: Only first half of user half is used, the rest could be used for a second layer
+        // The display half is written to by this code to prepare the DMA output
+        // User code does not have access to that half, so DMA proceeds without needing to
+        // stall user code.
+        // TODO: Palette conversion can be performed with PIO tricks
+        const uint32_t num_pixels = 320 * 240;
+        uint16_t* write_ptr = (uint16_t*)(framebuffer) + num_pixels;
+        uint8_t* read_ptr = (uint8_t*)(framebuffer);
+
+        uint32_t count = num_pixels;
         while (count--)
         {
-            *write_ptr-- = d8_palette[*read_ptr--];
+            // TODO: Use top quarter of user half as a second layer with 0 as transparent
+            *write_ptr++ = d8_palette[*read_ptr++];
         }
-        start_dma(start_ptr, 320 * 240);
-        framebuffer_offset = framebuffer_offset?0:320*240*2;
+
+        uint8_t* dma_ptr = (uint8_t*)(framebuffer) + num_pixels * 2;
+        start_dma(dma_ptr, num_pixels);
     } else if (direct16) {
         uint8_t* ptr = (uint8_t*)(framebuffer) + framebuffer_offset;
         framebuffer_offset = framebuffer_offset?0:320*240*2;
