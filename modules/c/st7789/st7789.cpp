@@ -5,7 +5,9 @@
 namespace pimoroni {
 
   uint32_t __attribute__((section(".uninitialized_data"))) __attribute__ ((aligned (4))) framebuffer[320 * 240];
+  // Also used by direct8 mode to store the palette since this is otherwise unused
   uint16_t __attribute__((section(".uninitialized_data"))) __attribute__ ((aligned (4))) linebuffer[240 * 4];
+  uint16_t* d8_palette = &linebuffer[0];
 
   // If we configure MicroPython's main.c to skip the first 320 * 240 * sizeof(uint32_t)
   // bytes we can steal this as a backbuffer.
@@ -218,7 +220,20 @@ namespace pimoroni {
     gpio_put(dc, 1); // data mode
 
     configure_dma_for_pixels(true);
-    if(direct16) {
+    if(direct8) {
+        // TODO: Before adding special PIO code, just manually overwrite buffer with
+        // converted colours
+        uint8_t* start_ptr = (uint8_t*)(framebuffer) + framebuffer_offset;
+        uint32_t count = 320 * 240;
+        uint16_t* write_ptr = (uint16_t*)(start_ptr) + count - 1;
+        uint8_t* read_ptr = start_ptr + count - 1;
+        while (count--)
+        {
+            *write_ptr-- = d8_palette[*read_ptr--];
+        }
+        start_dma(start_ptr, 320 * 240);
+        framebuffer_offset = framebuffer_offset?0:320*240*2;
+    } else if (direct16) {
         uint8_t* ptr = (uint8_t*)(framebuffer) + framebuffer_offset;
         framebuffer_offset = framebuffer_offset?0:320*240*2;
         start_dma(ptr, 320 * 240);
@@ -275,11 +290,43 @@ namespace pimoroni {
     this->fullres_mode = mode;
   }
 
+  bool ST7789::get_direct8() {
+    return this->direct8;
+  }
+
   bool ST7789::get_direct16() {
     return this->direct16;
   }
 
+  void ST7789::set_direct8(bool direct8, uint16_t* palette, uint16_t num_entries) {
+    wait_for_dma();
+    if (!direct8)
+    {
+        this->direct8 = false;
+        return;
+    }
+    if (this->direct16)
+    {
+        this->direct16 = false;
+    }
+    this->direct8 = true;
+    for (uint16_t idx = 0; idx < num_entries; ++idx)
+    {
+        d8_palette[idx] = palette[idx];
+    }
+    // Fill unused entries with black
+    for (uint16_t idx = num_entries; idx < 255; ++idx)
+    {
+        d8_palette[idx] = 0x0;
+    }
+  }
+
   void ST7789::set_direct16(bool direct16) {
+    wait_for_dma();
+    if (direct16 && this->direct8)
+    {
+        this->direct8 = false;
+    }
     this->direct16 = direct16;
   }
 
