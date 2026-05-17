@@ -7,7 +7,7 @@ namespace pimoroni {
   uint32_t __attribute__((section(".uninitialized_data"))) __attribute__ ((aligned (4))) framebuffer[320 * 240];
   // Also used by direct8 mode to store the palette since this is otherwise unused
   uint16_t __attribute__((section(".uninitialized_data"))) __attribute__ ((aligned (4))) linebuffer[240 * 4];
-  uint16_t* d8_palette = &linebuffer[0];
+  uint16_t* d8_palette[2] = {(uint16_t*)linebuffer, (uint16_t*)linebuffer + 256};
 
   // If we configure MicroPython's main.c to skip the first 320 * 240 * sizeof(uint32_t)
   // bytes we can steal this as a backbuffer.
@@ -225,18 +225,20 @@ namespace pimoroni {
                 uint8_t c = *l2_read_ptr++;
                 if (c == 0)
                 {
-                    c = *read_ptr;
+                    *write_ptr++ = d8_palette[0][*read_ptr];
+                }
+                else
+                {
+                    *write_ptr++ = d8_palette[1][c];
                 }
                 ++read_ptr;
-
-                *write_ptr++ = d8_palette[c];
             }
         }
         else
         {
             while (count--)
             {
-                *write_ptr++ = d8_palette[*read_ptr++];
+                *write_ptr++ = d8_palette[0][*read_ptr++];
             }
         }
     }
@@ -346,20 +348,21 @@ namespace pimoroni {
 
   }
 
-  void ST7789::set_direct8_palette(uint16_t* palette, uint16_t num_entries) {
+  void ST7789::set_direct8_palette(uint16_t* palette, uint16_t num_entries, uint8_t layer) {
         if (!direct8)
         {
             return;
         }
         wait_for_dma();
+        layer = layer&1;
         for (uint16_t idx = 0; idx < num_entries; ++idx)
         {
-            d8_palette[idx] = palette[idx];
+            d8_palette[layer][idx] = palette[idx];
         }
         // Fill unused entries with black
         for (uint16_t idx = num_entries; idx < 255; ++idx)
         {
-            d8_palette[idx] = 0x0;
+            d8_palette[layer][idx] = 0x0;
         }
   }
 
