@@ -87,9 +87,9 @@ mp_obj_t st7789_set_mode(mp_obj_t self_in, mp_obj_t mode_in) {
     return mp_const_none;
 }
 
-mp_obj_t st7789_set_rawmode(mp_obj_t self_in, mp_obj_t mode_in) {
+mp_obj_t st7789_set_direct16(mp_obj_t self_in, mp_obj_t mode_in) {
     (void)self_in;
-    display->set_rawmode(mp_obj_is_true(mode_in));
+    display->set_direct16(mp_obj_is_true(mode_in));
     return mp_const_none;
 }
 
@@ -103,7 +103,7 @@ mp_obj_t st7789_set_vsync(mp_obj_t self_in, mp_obj_t sync_in) {
 mp_int_t st7789_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_uint_t flags) {
     (void)self_in;
     (void)flags;
-    if (display->get_rawmode())
+    if (display->get_direct16())
     {
         bufinfo->buf = ((uint8_t*)display->get_framebuffer()) + display->get_framebuffer_offset();
         bufinfo->len = 320 * 240 * 2;

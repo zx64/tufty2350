@@ -218,7 +218,7 @@ namespace pimoroni {
     gpio_put(dc, 1); // data mode
 
     configure_dma_for_pixels(true);
-    if(rawmode) {
+    if(direct16) {
         uint8_t* ptr = (uint8_t*)(framebuffer) + framebuffer_offset;
         framebuffer_offset = framebuffer_offset?0:320*240*2;
         start_dma(ptr, 320 * 240);
@@ -275,12 +275,12 @@ namespace pimoroni {
     this->fullres_mode = mode;
   }
 
-  bool ST7789::get_rawmode() {
-    return this->rawmode;
+  bool ST7789::get_direct16() {
+    return this->direct16;
   }
 
-  void ST7789::set_rawmode(bool rawmode) {
-    this->rawmode = rawmode;
+  void ST7789::set_direct16(bool direct16) {
+    this->direct16 = direct16;
   }
 
   void ST7789::set_backlight(uint8_t brightness) {
