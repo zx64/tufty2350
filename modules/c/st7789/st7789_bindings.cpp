@@ -94,11 +94,16 @@ mp_obj_t st7789_set_direct8(mp_obj_t self_in, mp_obj_t enable_in, mp_obj_t dual_
     return mp_const_none;
 }
 
-mp_obj_t st7789_set_direct8_palette(mp_obj_t self_in, mp_obj_t palette_in) {
+mp_obj_t st7789_set_direct8_palette(mp_obj_t self_in, mp_obj_t palette_in, mp_obj_t layer_in) {
     (void)self_in;
     if (!display->get_direct8())
     {
         mp_raise_ValueError(MP_ERROR_TEXT("Display is not in Direct8 mode"));
+    }
+    int8_t layer = mp_obj_get_int(layer_in);
+    if (layer > 1)
+    {
+        mp_raise_ValueError(MP_ERROR_TEXT("Invalid layer number (-1, 0, 1)"));
     }
 
     mp_buffer_info_t tmp;
@@ -112,7 +117,15 @@ mp_obj_t st7789_set_direct8_palette(mp_obj_t self_in, mp_obj_t palette_in) {
     {
         mp_raise_ValueError(MP_ERROR_TEXT("Palette can not have more than 256 entries"));
     }
-    display->set_direct8_palette(static_cast<uint16_t*>(tmp.buf), num_entries);
+    if (layer < 0)
+    {
+        display->set_direct8_palette(static_cast<uint16_t*>(tmp.buf), num_entries, 0);
+        display->set_direct8_palette(static_cast<uint16_t*>(tmp.buf), num_entries, 1);
+    }
+    else
+    {
+        display->set_direct8_palette(static_cast<uint16_t*>(tmp.buf), num_entries, (uint8_t)layer);
+    }
 
     return mp_const_none;
 }

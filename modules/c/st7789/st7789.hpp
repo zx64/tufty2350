@@ -120,7 +120,7 @@ namespace pimoroni {
     void set_backlight(uint8_t brightness);
     void set_mode(bool mode);
     void set_direct8(bool direct8, bool dual_layer);
-    void set_direct8_palette(uint16_t* palette, uint16_t num_entries);
+    void set_direct8_palette(uint16_t* palette, uint16_t num_entries, uint8_t layer);
     void set_direct16(bool direct16);
     bool get_mode();
     bool get_direct8();
