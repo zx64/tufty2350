@@ -202,25 +202,10 @@ namespace pimoroni {
     }
 
     wait_for_dma();
-    configure_dma_for_pixels(false);
 
-    // Wait for vsync
-    if (use_vsync) {
-      while (gpio_get(vsync) == 0) {
-  #ifdef mp_event_handle_nowait
-        mp_event_handle_nowait();
-  #endif
-      }
-    }
-
-    uint8_t cmd = reg::RAMWR;
-    gpio_put(dc, 0); // command mode
-    gpio_put(cs, 0);
-    write_blocking(&cmd, 1);
-    gpio_put(dc, 1); // data mode
-
-    configure_dma_for_pixels(true);
-    if(direct8) {
+    // Can start preparing this before waiting for vsync but still has to be after the
+    // previous transfer has completed
+    if (direct8) {
         // In this mode, the framebuffer array is divided up into two regions
         // [user half 320 * 240 * 2] [display half 320 * 240 * 2]
         // The user half is read from but not written to by this code
@@ -254,9 +239,29 @@ namespace pimoroni {
                 *write_ptr++ = d8_palette[*read_ptr++];
             }
         }
+    }
 
-        uint8_t* dma_ptr = (uint8_t*)(framebuffer) + num_pixels * 2;
-        start_dma(dma_ptr, num_pixels);
+    configure_dma_for_pixels(false);
+
+    // Wait for vsync
+    if (use_vsync) {
+      while (gpio_get(vsync) == 0) {
+  #ifdef mp_event_handle_nowait
+        mp_event_handle_nowait();
+  #endif
+      }
+    }
+
+    uint8_t cmd = reg::RAMWR;
+    gpio_put(dc, 0); // command mode
+    gpio_put(cs, 0);
+    write_blocking(&cmd, 1);
+    gpio_put(dc, 1); // data mode
+
+    configure_dma_for_pixels(true);
+    if(direct8) {
+        uint8_t* ptr = (uint8_t*)(framebuffer) + 320 * 240 * 2;
+        start_dma(ptr, 320 * 240);
     } else if (direct16) {
         uint8_t* ptr = (uint8_t*)(framebuffer) + framebuffer_offset;
         framebuffer_offset = framebuffer_offset?0:320*240*2;
