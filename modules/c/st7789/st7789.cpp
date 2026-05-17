@@ -224,20 +224,35 @@ namespace pimoroni {
         // In this mode, the framebuffer array is divided up into two regions
         // [user half 320 * 240 * 2] [display half 320 * 240 * 2]
         // The user half is read from but not written to by this code
-        // TODO: Only first half of user half is used, the rest could be used for a second layer
-        // The display half is written to by this code to prepare the DMA output
-        // User code does not have access to that half, so DMA proceeds without needing to
-        // stall user code.
+        // If we are in dual layer mode, the user half is assumed to be subdivided into
+        // equal regions, with the second layer taking priority over the first layer.
         // TODO: Palette conversion can be performed with PIO tricks
         const uint32_t num_pixels = 320 * 240;
         uint16_t* write_ptr = (uint16_t*)(framebuffer) + num_pixels;
         uint8_t* read_ptr = (uint8_t*)(framebuffer);
-
         uint32_t count = num_pixels;
-        while (count--)
+
+        if (direct8_dual_layer)
         {
-            // TODO: Use top quarter of user half as a second layer with 0 as transparent
-            *write_ptr++ = d8_palette[*read_ptr++];
+            uint8_t* l2_read_ptr = (uint8_t*)(framebuffer) + num_pixels;
+            while (count--)
+            {
+                uint8_t c = *l2_read_ptr++;
+                if (c == 0)
+                {
+                    c = *read_ptr;
+                }
+                ++read_ptr;
+
+                *write_ptr++ = d8_palette[c];
+            }
+        }
+        else
+        {
+            while (count--)
+            {
+                *write_ptr++ = d8_palette[*read_ptr++];
+            }
         }
 
         uint8_t* dma_ptr = (uint8_t*)(framebuffer) + num_pixels * 2;
@@ -303,11 +318,15 @@ namespace pimoroni {
     return this->direct8;
   }
 
+  bool ST7789::get_direct8_dual_layer() {
+    return this->direct8_dual_layer;
+  }
+
   bool ST7789::get_direct16() {
     return this->direct16;
   }
 
-  void ST7789::set_direct8(bool new_direct8, uint16_t* palette, uint16_t num_entries) {
+  void ST7789::set_direct8(bool new_direct8, bool dual_layer) {
     if (!new_direct8)
     {
         this->direct8 = false;
@@ -317,22 +336,26 @@ namespace pimoroni {
     {
         this->direct16 = false;
     }
-    // Only time we need to wait for DMA is if we're reconfiguring the palette
-    if (this->direct8 && new_direct8)
-    {
-        wait_for_dma();
-    }
-
     this->direct8 = true;
-    for (uint16_t idx = 0; idx < num_entries; ++idx)
-    {
-        d8_palette[idx] = palette[idx];
-    }
-    // Fill unused entries with black
-    for (uint16_t idx = num_entries; idx < 255; ++idx)
-    {
-        d8_palette[idx] = 0x0;
-    }
+    this->direct8_dual_layer = dual_layer;
+
+  }
+
+  void ST7789::set_direct8_palette(uint16_t* palette, uint16_t num_entries) {
+        if (!direct8)
+        {
+            return;
+        }
+        wait_for_dma();
+        for (uint16_t idx = 0; idx < num_entries; ++idx)
+        {
+            d8_palette[idx] = palette[idx];
+        }
+        // Fill unused entries with black
+        for (uint16_t idx = num_entries; idx < 255; ++idx)
+        {
+            d8_palette[idx] = 0x0;
+        }
   }
 
   void ST7789::set_direct16(bool direct16) {
