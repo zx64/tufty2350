@@ -87,27 +87,33 @@ mp_obj_t st7789_set_mode(mp_obj_t self_in, mp_obj_t mode_in) {
     return mp_const_none;
 }
 
-mp_obj_t st7789_set_direct8(mp_obj_t self_in, mp_obj_t enable_in, mp_obj_t palette_in) {
+mp_obj_t st7789_set_direct8(mp_obj_t self_in, mp_obj_t enable_in, mp_obj_t dual_layer_in) {
     (void)self_in;
-    if (mp_obj_is_true(self_in))
+    display->set_direct8(mp_obj_is_true(enable_in), mp_obj_is_true(dual_layer_in));
+
+    return mp_const_none;
+}
+
+mp_obj_t st7789_set_direct8_palette(mp_obj_t self_in, mp_obj_t palette_in) {
+    (void)self_in;
+    if (!display->get_direct8())
     {
-        mp_buffer_info_t tmp;
-        mp_get_buffer_raise(palette_in, &tmp, MP_BUFFER_READ);
-        if (tmp.typecode != 'H')
-        {
-            mp_raise_ValueError(MP_ERROR_TEXT("Palette must use Uint16 (H)"));
-        }
-        uint16_t num_entries = tmp.len / sizeof(uint16_t);
-        if (num_entries > 256)
-        {
-            mp_raise_ValueError(MP_ERROR_TEXT("Palette can not have more than 256 entries"));
-        }
-        display->set_direct8(true, static_cast<uint16_t*>(tmp.buf), num_entries);
+        mp_raise_ValueError(MP_ERROR_TEXT("Display is not in Direct8 mode"));
     }
-    else
+
+    mp_buffer_info_t tmp;
+    mp_get_buffer_raise(palette_in, &tmp, MP_BUFFER_READ);
+    if (tmp.typecode != 'H')
     {
-        display->set_direct8(false, nullptr, 0);
+        mp_raise_ValueError(MP_ERROR_TEXT("Palette must use Uint16 (H)"));
     }
+    uint16_t num_entries = tmp.len / sizeof(uint16_t);
+    if (num_entries > 256)
+    {
+        mp_raise_ValueError(MP_ERROR_TEXT("Palette can not have more than 256 entries"));
+    }
+    display->set_direct8_palette(static_cast<uint16_t*>(tmp.buf), num_entries);
+
     return mp_const_none;
 }
 
@@ -133,9 +139,10 @@ mp_int_t st7789_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_
         // upper half for conversion
         bufinfo->buf = (uint8_t*)display->get_framebuffer();
         bufinfo->len = 320 * 240;
-        // TODO: We have space in the upper quarter of each half to store a second layer
-        // that can be automatically merged
-        //bufinfo->len = 320 * 240 * 2; // Can support two layers
+        if (display->get_direct8_dual_layer())
+        {
+            bufinfo->len *= 2;
+        }
         bufinfo->typecode = 'B';
     }
     else if (display->get_direct16())

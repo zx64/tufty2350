@@ -31,6 +31,7 @@ namespace pimoroni {
     int fullres_height = 240;
     bool fullres_mode = false;
     bool direct8 = false;
+    bool direct8_dual_layer = false;
     bool direct16 = false;
     ptrdiff_t framebuffer_offset = 0;
 
@@ -118,10 +119,12 @@ namespace pimoroni {
     void update();
     void set_backlight(uint8_t brightness);
     void set_mode(bool mode);
-    void set_direct8(bool direct8, uint16_t* palette, uint16_t num_entries);
+    void set_direct8(bool direct8, bool dual_layer);
+    void set_direct8_palette(uint16_t* palette, uint16_t num_entries);
     void set_direct16(bool direct16);
     bool get_mode();
     bool get_direct8();
+    bool get_direct8_dual_layer();
     bool get_direct16();
     uint32_t *get_framebuffer();
     ptrdiff_t get_framebuffer_offset();
