@@ -307,17 +307,15 @@ namespace pimoroni {
         channel_config_set_transfer_data_size(&dma_config, DMA_SIZE_16);
         sm_config_set_out_shift(&sm_config, false, true, 16);
         sm_config_set_wrap(&sm_config, parallel_offset + st7789_parallel_wrap_target, parallel_offset + st7789_parallel_offset_wrap16);
-        pio_sm_init(parallel_pio, parallel_sm, parallel_offset, &sm_config);
-        pio_sm_set_enabled(parallel_pio, parallel_sm, true);
     }
     else
     {
         channel_config_set_transfer_data_size(&dma_config, DMA_SIZE_8);
         sm_config_set_out_shift(&sm_config, false, true, 8);
         sm_config_set_wrap(&sm_config, parallel_offset + st7789_parallel_wrap_target, parallel_offset + st7789_parallel_wrap);
-        pio_sm_init(parallel_pio, parallel_sm, parallel_offset, &sm_config);
-        pio_sm_set_enabled(parallel_pio, parallel_sm, true);
     }
+    pio_sm_init(parallel_pio, parallel_sm, parallel_offset, &sm_config);
+    pio_sm_set_enabled(parallel_pio, parallel_sm, true);
     dma_channel_configure(st_dma, &dma_config, &parallel_pio->txf[parallel_sm], NULL, 0, false);
   }
 
