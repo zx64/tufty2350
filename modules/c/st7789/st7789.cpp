@@ -9,30 +9,6 @@ namespace pimoroni {
   uint16_t __attribute__((section(".uninitialized_data"))) __attribute__ ((aligned (4))) linebuffer[240 * 4];
   uint16_t* d8_palette[2] = {(uint16_t*)linebuffer, (uint16_t*)linebuffer + 256};
 
-#if 0
-    // Too slow
-    static uint16_t blend_rgb565(uint16_t src, uint16_t dst)
-    {
-        uint8_t src_r = src >> 11, dst_r = dst >> 11;
-        uint8_t src_g = (src & 0b00000'111111'00000) >> 5, dst_g = (dst & 0b00000'111111'00000) >> 5;
-        uint8_t src_b = (src & 0b00000'000000'11111), dst_b = dst & 0b00000'000000'11111;
-        int16_t d_r = (dst_r - src_r) >> 1;
-        int16_t d_g = (dst_g - src_g) >> 1;
-        int16_t d_b = (dst_b - src_b) >> 1;
-
-        int16_t blend_r = src_r + d_r, blend_g = src_g + d_g, blend_b = src_b + d_b;
-
-        if (blend_r < 0) blend_r = 0;
-        if (blend_r > 0b11111) blend_r = 0b11111;
-        if (blend_g < 0) blend_g = 0;
-        if (blend_g > 0b111111) blend_g = 0b111111;
-        if (blend_b < 0) blend_b = 0;
-        if (blend_b > 0b11111) blend_b = 0b11111;
-
-        return (blend_r << 11 | blend_g << 5 | blend_b);
-    }
-#endif
-
   // If we configure MicroPython's main.c to skip the first 320 * 240 * sizeof(uint32_t)
   // bytes we can steal this as a backbuffer.
   // auto backbuffer = new((uintptr_t *)XIP_PSRAM_CACHED) uint32_t[320 * 240];
@@ -253,7 +229,6 @@ namespace pimoroni {
                 }
                 else
                 {
-                    //*write_ptr++ = blend_rgb565(d8_palette[1][c], d8_palette[0][*read_ptr]);
                     *write_ptr++ = d8_palette[1][c];
                 }
                 ++read_ptr;
