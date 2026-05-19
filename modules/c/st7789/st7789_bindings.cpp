@@ -151,7 +151,7 @@ mp_int_t st7789_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_
         // Always return the first part of the framebuffer in this mode as we can use the
         // upper half for conversion
         bufinfo->buf = (uint8_t*)display->get_framebuffer();
-        bufinfo->len = 320 * 240;
+        bufinfo->len = 320 * 240 * sizeof(uint8_t);
         if (display->get_direct8_dual_layer())
         {
             bufinfo->len *= 2;
@@ -161,9 +161,8 @@ mp_int_t st7789_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_
     else if (display->get_direct16())
     {
         bufinfo->buf = ((uint8_t*)display->get_framebuffer()) + display->get_framebuffer_offset();
-        // TODO: Better to return this in uint16 format?
-        bufinfo->len = 320 * 240 * 2;
-        bufinfo->typecode = 'B';
+        bufinfo->len = 320 * 240 * sizeof(uint16_t);
+        bufinfo->typecode = 'H';
     }
     else
     {
