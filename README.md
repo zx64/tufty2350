@@ -1,3 +1,13 @@
+# Changes for this branch
+
+Documentation and examples are being developed in https://github.com/zx64/direct816-demos
+
+GitHub Actions are enabled, preview builds should be downloadable from there.
+
+I'll eventually promote builds from that to releases for easier access.
+
+Original README.md continues:
+
 # Tufty 2350<!-- omit in toc -->
 
 Tufty — a glorious blend of everything you love about Badger, now with a vibrant full-colour display and silky-smooth animation.
