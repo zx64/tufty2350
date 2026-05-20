@@ -59,7 +59,8 @@ namespace pimoroni {
     // PIO and DMA state for RGB565 LUT conversion
     uint rgb565_lut_sm = ~0u;
     int rgb565_lut_offset = -1;
-    uint dma_lut_fetch, dma_lut_xfer;
+    uint dma_lut_fetch, dma_lut_xfer, dma_lut_output;
+    dma_channel_config dma_lut_fetch_config;
 
     // Whether to vsync
     bool use_vsync = true;

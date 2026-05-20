@@ -342,10 +342,78 @@ namespace pimoroni {
               panic("Could not add RGB565 LUT PIO program.");
           }
           rgb565_lut_program_init(parallel_pio, rgb565_lut_sm, rgb565_lut_offset, (uintptr_t)&d8_palette[0]);
+
+          // First stage of the pipeline
+          // receives indexed bytes from framebuffer
+          // writes into the rgb565_lut PIO FIFO
           dma_lut_fetch = dma_claim_unused_channel(true);
-          // TODO: Config
+
+          // Second stage
+          // receives 32-bit address from PIO
+          // writes to the read address of the DMA
           dma_lut_xfer = dma_claim_unused_channel(true);
-          // TODO: Config
+
+          // Third stage
+          // receives colour data
+          // writes to the ST7789 PIO
+          // chains onto the second stage
+          dma_lut_output = dma_claim_unused_channel(true);
+
+
+          dma_lut_fetch_config = dma_channel_get_default_config(dma_lut_fetch);
+          {
+              dma_channel_config& c = dma_lut_fetch_config;
+              channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
+              channel_config_set_read_increment(&c, true);
+              channel_config_set_write_increment(&c, false);
+              channel_config_set_dreq(&c, pio_get_dreq(parallel_pio, rgb565_lut_sm, true));
+#if 0
+              // TODO:
+              // Remaining configuration happens when update() is called
+              // just leaving this here for now
+              dma_channel_configure(dma_lut_fetch, &dma_lut_fetch_config,
+                &parallel_pio->txf[rgb565_lut_sm],
+                &framebuffer[0],
+                320 * 240,
+                true
+              );
+#endif
+          }
+
+          // Second stage config
+          {
+              dma_channel_config c = dma_channel_get_default_config(dma_lut_xfer);
+              channel_config_set_transfer_data_size(&c, DMA_SIZE_32);
+              channel_config_set_read_increment(&c, false);
+              channel_config_set_write_increment(&c, false);
+              channel_config_set_dreq(&c, pio_get_dreq(parallel_pio, rgb565_lut_sm, false));
+
+              dma_channel_configure(dma_lut_xfer, &c,
+                 &dma_hw->ch[dma_lut_output].al3_read_addr_trig,
+                 &parallel_pio->rxf[rgb565_lut_sm], 1,
+                 true
+              );
+          }
+
+          // Third stage config
+          // TODO: We might be able to reuse st_dma as it also targets the Parallel PIO FIFO
+          // Doing so might require changes to configure_dma_for_pixels
+          {
+              dma_channel_config c = dma_channel_get_default_config(dma_lut_output);
+              channel_config_set_transfer_data_size(&c, DMA_SIZE_16);
+              channel_config_set_read_increment(&c, true);
+              channel_config_set_write_increment(&c, false);
+              channel_config_set_chain_to(&c, dma_lut_xfer);
+              channel_config_set_dreq(&c, pio_get_dreq(parallel_pio, parallel_sm, true));
+              c.ctrl |= DMA_CH0_CTRL_TRIG_HIGH_PRIORITY_BITS;
+
+              dma_channel_configure(dma_lut_output, &c,
+                  &parallel_pio->txf[parallel_sm],
+                  nullptr, // configured by second stage
+                  1, // one 16-bit transfer
+                  false
+              );
+          }
       }
   }
 
