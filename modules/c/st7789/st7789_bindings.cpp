@@ -94,6 +94,14 @@ mp_obj_t st7789_set_direct8(mp_obj_t self_in, mp_obj_t enable_in, mp_obj_t dual_
     return mp_const_none;
 }
 
+mp_obj_t st7789_set_direct8_pio(mp_obj_t self_in, mp_obj_t enable_in) {
+    (void)self_in;
+    display->set_direct8_pio(mp_obj_is_true(enable_in));
+
+    return mp_const_none;
+}
+
+
 mp_obj_t st7789_set_direct8_palette(mp_obj_t self_in, mp_obj_t palette_in, mp_obj_t layer_in) {
     (void)self_in;
     if (!display->get_direct8())

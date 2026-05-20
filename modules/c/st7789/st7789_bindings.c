@@ -6,6 +6,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(st7789___del___obj, st7789___del__);
 static MP_DEFINE_CONST_FUN_OBJ_1(st7789_update_obj, st7789_update);
 static MP_DEFINE_CONST_FUN_OBJ_2(st7789_set_mode_obj, st7789_set_mode);
 static MP_DEFINE_CONST_FUN_OBJ_3(st7789_set_direct8_obj, st7789_set_direct8);
+static MP_DEFINE_CONST_FUN_OBJ_2(st7789_set_direct8_pio_obj, st7789_set_direct8_pio);
 static MP_DEFINE_CONST_FUN_OBJ_3(st7789_set_direct8_palette_obj, st7789_set_direct8_palette);
 static MP_DEFINE_CONST_FUN_OBJ_2(st7789_direct8_prepare_obj, st7789_direct8_prepare);
 static MP_DEFINE_CONST_FUN_OBJ_2(st7789_set_direct16_obj, st7789_set_direct16);
@@ -20,6 +21,7 @@ static const mp_rom_map_elem_t st7789_locals[] = {
     { MP_ROM_QSTR(MP_QSTR_update), MP_ROM_PTR(&st7789_update_obj) },
     { MP_ROM_QSTR(MP_QSTR_fullres), MP_ROM_PTR(&st7789_set_mode_obj) },
     { MP_ROM_QSTR(MP_QSTR_direct8), MP_ROM_PTR(&st7789_set_direct8_obj) },
+    { MP_ROM_QSTR(MP_QSTR_direct8_pio), MP_ROM_PTR(&st7789_set_direct8_pio_obj) },
     { MP_ROM_QSTR(MP_QSTR_direct8_palette), MP_ROM_PTR(&st7789_set_direct8_palette_obj) },
     { MP_ROM_QSTR(MP_QSTR_direct8_prepare), MP_ROM_PTR(&st7789_direct8_prepare_obj) },
     { MP_ROM_QSTR(MP_QSTR_direct16), MP_ROM_PTR(&st7789_set_direct16_obj) },
