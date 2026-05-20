@@ -32,6 +32,7 @@ namespace pimoroni {
     int fullres_height = 240;
     bool fullres_mode = false;
     bool direct8 = false;
+    bool direct8_pio = false;
     bool direct8_dual_layer = false;
     bool direct16 = false;
     ptrdiff_t framebuffer_offset = 0;

@@ -159,6 +159,10 @@ namespace pimoroni {
 
   inline void ST7789::wait_for_dma(void) {
     dma_channel_wait_for_finish_blocking(st_dma);
+    if (direct8_pio)
+    {
+        dma_channel_wait_for_finish_blocking(dma_lut_output);
+    }
 
     // Prevent a race between PIO and chip-select or data/command
     // What's up with pio_sm_is_exec_stalled?
@@ -199,6 +203,10 @@ namespace pimoroni {
     if (sys_clk_hz != startup_hz) {
       startup_hz = sys_clk_hz;
       pio_sm_set_clkdiv(parallel_pio, parallel_sm, fmax(1.0f, float(sys_clk_hz) / max_pio_clk));
+      if (direct8_pio)
+      {
+          pio_sm_set_clkdiv(parallel_pio, rgb565_lut_sm, fmax(1.0f, float(sys_clk_hz) / max_pio_clk));
+      }
     }
 
     wait_for_dma();
@@ -207,7 +215,7 @@ namespace pimoroni {
     // previous transfer has completed
     // User code can explicitly call this if it wants to further post-process the
     // converted framebuffer or is able to schedule half the work on the second core.
-    if (direct8 && !framebuffer_offset) {
+    if (direct8 && !framebuffer_offset && !direct8_pio) {
         direct8_prepare(false);
         direct8_prepare(true);
     }
@@ -231,9 +239,21 @@ namespace pimoroni {
 
     configure_dma_for_pixels(true);
     if(direct8) {
-        uint8_t* ptr = (uint8_t*)(framebuffer) + framebuffer_offset;
-        start_dma(ptr, 320 * 240);
-        framebuffer_offset = 0;
+        if (direct8_pio)
+        {
+              dma_channel_configure(dma_lut_fetch, &dma_lut_fetch_config,
+                &parallel_pio->txf[rgb565_lut_sm],
+                &framebuffer[0],
+                320 * 240,
+                true
+              );
+        }
+        else
+        {
+            uint8_t* ptr = (uint8_t*)(framebuffer) + framebuffer_offset;
+            start_dma(ptr, 320 * 240);
+            framebuffer_offset = 0;
+        }
     } else if (direct16) {
         uint8_t* ptr = (uint8_t*)(framebuffer) + framebuffer_offset;
         framebuffer_offset = framebuffer_offset?0:320*240*2;
@@ -326,13 +346,18 @@ namespace pimoroni {
   {
       if (!use_pio)
       {
-          // TODO: release resources
+          direct8_pio = false;
+          if (rgb565_lut_sm != ~0u)
+          {
+              // TODO: release resources
+          }
           return;
       }
       if (!direct8)
       {
           set_direct8(true, false);
       }
+      direct8_dual_layer = false;
 
       if (rgb565_lut_sm == ~0u)
       {
@@ -342,6 +367,8 @@ namespace pimoroni {
               panic("Could not add RGB565 LUT PIO program.");
           }
           rgb565_lut_program_init(parallel_pio, rgb565_lut_sm, rgb565_lut_offset, (uintptr_t)&d8_palette[0]);
+          const uint32_t sys_clk_hz = clock_get_hz(clk_sys);
+          pio_sm_set_clkdiv(parallel_pio, rgb565_lut_sm, fmax(1.0f, float(sys_clk_hz) / max_pio_clk));
 
           // First stage of the pipeline
           // receives indexed bytes from framebuffer
@@ -367,17 +394,7 @@ namespace pimoroni {
               channel_config_set_read_increment(&c, true);
               channel_config_set_write_increment(&c, false);
               channel_config_set_dreq(&c, pio_get_dreq(parallel_pio, rgb565_lut_sm, true));
-#if 0
-              // TODO:
-              // Remaining configuration happens when update() is called
-              // just leaving this here for now
-              dma_channel_configure(dma_lut_fetch, &dma_lut_fetch_config,
-                &parallel_pio->txf[rgb565_lut_sm],
-                &framebuffer[0],
-                320 * 240,
-                true
-              );
-#endif
+              // Remaining configuration happens during update
           }
 
           // Second stage config
@@ -415,6 +432,7 @@ namespace pimoroni {
               );
           }
       }
+      direct8_pio = true;
   }
 
   void ST7789::set_direct8_palette(uint16_t* palette, uint16_t num_entries, uint8_t layer) {
@@ -436,7 +454,7 @@ namespace pimoroni {
   }
 
   void ST7789::direct8_prepare(bool core1) {
-      if (!direct8)
+      if (!direct8 || direct8_pio)
       {
           return;
       }
