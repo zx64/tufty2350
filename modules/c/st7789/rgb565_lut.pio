@@ -1,0 +1,27 @@
+.program rgb565_lut
+    pull block
+    in X, 23 ; Palette base pointer
+    in OSR, 8 ; Store palette index in lowest byte
+    in NULL, 1 ; Multipy by two (uint16 alignment)
+
+% c-sdk {
+
+static inline void rgb565_lut_program_init(PIO pio, uint sm, uint offset, uintptr_t lut_address)
+{
+    pio_sm_config c = rgb565_lut_program_get_default_config(offset);
+    sm_config_set_out_shift(&c, false, false, 32);
+    sm_config_set_in_shift(&c, false, true, 32);
+    pio_sm_init(pio, sm, offset, &c);
+
+    // Store the top 23 bits of lut_address in the state machine's X register
+    // This is copied into the shift register, followed by the eight bits of the palette index.
+    // Finally the result is shifted because we're accessing a 16-bit value
+    pio_sm_put(pio, sm, lut_address >> 9);
+    pio_sm_exec(pio, sm, pio_encode_pull(false, true));
+    pio_sm_exec(pio, sm, pio_encode_mov(pio_x, pio_osr));
+    pio_sm_clear_fifos(pio, sm);
+
+    pio_sm_set_enabled(pio, sm, true);
+}
+
+%}

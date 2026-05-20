@@ -14,6 +14,7 @@
 
 #ifndef NO_QSTR
 #include "st7789_parallel.pio.h"
+#include "rgb565_lut.pio.h"
 #endif
 
 #include <algorithm>
@@ -54,6 +55,11 @@ namespace pimoroni {
     uint parallel_sm;
     int parallel_offset;
     uint st_dma;
+
+    // PIO and DMA state for RGB565 LUT conversion
+    uint rgb565_lut_sm = ~0u;
+    int rgb565_lut_offset = -1;
+    uint dma_lut_fetch, dma_lut_xfer;
 
     // Whether to vsync
     bool use_vsync = true;
@@ -121,6 +127,7 @@ namespace pimoroni {
     void set_mode(bool mode);
     void set_direct8(bool direct8, bool dual_layer);
     void set_direct8_palette(uint16_t* palette, uint16_t num_entries, uint8_t layer);
+    void set_direct8_pio(bool use_pio);
     void direct8_prepare(bool core1);
     void set_direct16(bool direct16);
     bool get_mode();

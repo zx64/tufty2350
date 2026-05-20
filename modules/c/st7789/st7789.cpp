@@ -6,7 +6,7 @@ namespace pimoroni {
 
   uint32_t __attribute__((section(".uninitialized_data"))) __attribute__ ((aligned (4))) framebuffer[320 * 240];
   // Also used by direct8 mode to store the palette since this is otherwise unused
-  uint16_t __attribute__((section(".uninitialized_data"))) __attribute__ ((aligned (4))) linebuffer[240 * 4];
+  uint16_t __attribute__((section(".uninitialized_data"))) __attribute__ ((aligned (512))) linebuffer[240 * 4];
   uint16_t* d8_palette[2] = {(uint16_t*)linebuffer, (uint16_t*)linebuffer + 256};
 
   // If we configure MicroPython's main.c to skip the first 320 * 240 * sizeof(uint32_t)
@@ -316,7 +316,37 @@ namespace pimoroni {
     this->framebuffer_offset = 0;
     this->direct8 = true;
     this->direct8_dual_layer = dual_layer;
+    if (dual_layer && rgb565_lut_sm != ~0u)
+    {
+        set_direct8_pio(false);
+    }
+  }
 
+  void ST7789::set_direct8_pio(bool use_pio)
+  {
+      if (!use_pio)
+      {
+          // TODO: release resources
+          return;
+      }
+      if (!direct8)
+      {
+          set_direct8(true, false);
+      }
+
+      if (rgb565_lut_sm == ~0u)
+      {
+          rgb565_lut_sm = pio_claim_unused_sm(parallel_pio, true);
+          rgb565_lut_offset = pio_add_program(parallel_pio, &rgb565_lut_program);
+          if(rgb565_lut_offset == -1) {
+              panic("Could not add RGB565 LUT PIO program.");
+          }
+          rgb565_lut_program_init(parallel_pio, rgb565_lut_sm, rgb565_lut_offset, (uintptr_t)&d8_palette[0]);
+          dma_lut_fetch = dma_claim_unused_channel(true);
+          // TODO: Config
+          dma_lut_xfer = dma_claim_unused_channel(true);
+          // TODO: Config
+      }
   }
 
   void ST7789::set_direct8_palette(uint16_t* palette, uint16_t num_entries, uint8_t layer) {
