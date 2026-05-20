@@ -187,7 +187,7 @@ mp_int_t st7789_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_
     else
     {
         bufinfo->buf = display->get_framebuffer();
-        bufinfo->len = 320 * 240 * 4;
+        bufinfo->len = 320 * 240 * sizeof(uint32_t);
         bufinfo->typecode = 'B';
     }
     return 0;
