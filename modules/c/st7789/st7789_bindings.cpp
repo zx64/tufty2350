@@ -136,7 +136,17 @@ mp_obj_t st7789_direct8_prepare(mp_obj_t self_in, mp_obj_t core1_in) {
     {
         mp_raise_ValueError(MP_ERROR_TEXT("Display is not in Direct8 mode"));
     }
-    display->direct8_prepare(mp_obj_is_true(core1_in));
+    int8_t core_id = mp_obj_get_int(core1_in);
+    if (core_id < 0)
+    {
+        display->direct8_prepare(false);
+        display->direct8_prepare(true);
+    }
+    else
+    {
+        display->direct8_prepare((bool)core_id);
+    }
+
     return mp_const_none;
 }
 
