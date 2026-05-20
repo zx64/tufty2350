@@ -205,42 +205,11 @@ namespace pimoroni {
 
     // Can start preparing this before waiting for vsync but still has to be after the
     // previous transfer has completed
-    if (direct8) {
-        // In this mode, the framebuffer array is divided up into two regions
-        // [user half 320 * 240 * 2] [display half 320 * 240 * 2]
-        // The user half is read from but not written to by this code
-        // If we are in dual layer mode, the user half is assumed to be subdivided into
-        // equal regions, with the second layer taking priority over the first layer.
-        // TODO: Palette conversion can be performed with PIO tricks
-        const uint32_t num_pixels = 320 * 240;
-        uint16_t* write_ptr = (uint16_t*)(framebuffer) + num_pixels;
-        uint8_t* read_ptr = (uint8_t*)(framebuffer);
-        uint32_t count = num_pixels;
-
-        if (direct8_dual_layer)
-        {
-            uint8_t* l2_read_ptr = (uint8_t*)(framebuffer) + num_pixels;
-            while (count--)
-            {
-                uint8_t c = *l2_read_ptr++;
-                if (c == 0)
-                {
-                    *write_ptr++ = d8_palette[0][*read_ptr];
-                }
-                else
-                {
-                    *write_ptr++ = d8_palette[1][c];
-                }
-                ++read_ptr;
-            }
-        }
-        else
-        {
-            while (count--)
-            {
-                *write_ptr++ = d8_palette[0][*read_ptr++];
-            }
-        }
+    // User code can explicitly call this if it wants to further post-process the
+    // converted framebuffer or is able to schedule half the work on the second core.
+    if (direct8 && !framebuffer_offset) {
+        direct8_prepare(false);
+        direct8_prepare(true);
     }
 
     configure_dma_for_pixels(false);
@@ -262,8 +231,9 @@ namespace pimoroni {
 
     configure_dma_for_pixels(true);
     if(direct8) {
-        uint8_t* ptr = (uint8_t*)(framebuffer) + 320 * 240 * 2;
+        uint8_t* ptr = (uint8_t*)(framebuffer) + framebuffer_offset;
         start_dma(ptr, 320 * 240);
+        framebuffer_offset = 0;
     } else if (direct16) {
         uint8_t* ptr = (uint8_t*)(framebuffer) + framebuffer_offset;
         framebuffer_offset = framebuffer_offset?0:320*240*2;
@@ -343,6 +313,7 @@ namespace pimoroni {
     {
         this->direct16 = false;
     }
+    this->framebuffer_offset = 0;
     this->direct8 = true;
     this->direct8_dual_layer = dual_layer;
 
@@ -364,6 +335,55 @@ namespace pimoroni {
         {
             d8_palette[layer][idx] = 0x0;
         }
+  }
+
+  void ST7789::direct8_prepare(bool core1) {
+      if (!direct8)
+      {
+          return;
+      }
+      wait_for_dma();
+
+      // In this mode, the framebuffer array is divided up into two regions
+      // [user half 320 * 240 * 2] [display half 320 * 240 * 2]
+      // The user half is read from but not written to by this code
+      // If we are in dual layer mode, the user half is assumed to be subdivided into
+      // equal regions, with the second layer taking priority over the first layer.
+      const uint32_t num_pixels = 320 * 240;
+      uint32_t count = num_pixels / 2;
+      const uint32_t offset = core1?count:0;
+      uint16_t* write_ptr = (uint16_t*)(framebuffer) + num_pixels + offset;
+      uint8_t* read_ptr = (uint8_t*)(framebuffer) + offset;
+
+      if (direct8_dual_layer)
+      {
+          uint8_t* l2_read_ptr = read_ptr + num_pixels;
+          while (count--)
+          {
+              uint8_t c = *l2_read_ptr++;
+              if (c == 0)
+              {
+                  *write_ptr++ = d8_palette[0][*read_ptr];
+              }
+              else
+              {
+                  *write_ptr++ = d8_palette[1][c];
+              }
+              ++read_ptr;
+          }
+      }
+      else
+      {
+          while (count--)
+          {
+              *write_ptr++ = d8_palette[0][*read_ptr++];
+          }
+      }
+
+      if (!core1)
+      {
+          framebuffer_offset = num_pixels * sizeof(uint16_t);
+      }
   }
 
   void ST7789::set_direct16(bool direct16) {

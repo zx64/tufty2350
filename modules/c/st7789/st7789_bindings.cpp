@@ -130,6 +130,16 @@ mp_obj_t st7789_set_direct8_palette(mp_obj_t self_in, mp_obj_t palette_in, mp_ob
     return mp_const_none;
 }
 
+mp_obj_t st7789_direct8_prepare(mp_obj_t self_in, mp_obj_t core1_in) {
+    (void)self_in;
+    if (!display->get_direct8())
+    {
+        mp_raise_ValueError(MP_ERROR_TEXT("Display is not in Direct8 mode"));
+    }
+    display->direct8_prepare(mp_obj_is_true(core1_in));
+    return mp_const_none;
+}
+
 mp_obj_t st7789_set_direct16(mp_obj_t self_in, mp_obj_t mode_in) {
     (void)self_in;
     display->set_direct16(mp_obj_is_true(mode_in));
@@ -148,15 +158,25 @@ mp_int_t st7789_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_
     (void)flags;
     if (display->get_direct8())
     {
-        // Always return the first part of the framebuffer in this mode as we can use the
-        // upper half for conversion
-        bufinfo->buf = (uint8_t*)display->get_framebuffer();
-        bufinfo->len = 320 * 240 * sizeof(uint8_t);
-        if (display->get_direct8_dual_layer())
+        // In this mode, the lower half is for the user to draw into, the upper half
+        // contains the prepared data ready to be sent to the display
+        // framebuffer_offset is updated once this preparation has completed
+        if (display->get_framebuffer_offset())
         {
-            bufinfo->len *= 2;
+            bufinfo->buf = ((uint8_t*)display->get_framebuffer()) + display->get_framebuffer_offset();
+            bufinfo->len = 320 * 240 * sizeof(uint16_t);
+            bufinfo->typecode = 'H';
         }
-        bufinfo->typecode = 'B';
+        else
+        {
+            bufinfo->buf = (uint8_t*)display->get_framebuffer();
+            bufinfo->len = 320 * 240 * sizeof(uint8_t);
+            if (display->get_direct8_dual_layer())
+            {
+                bufinfo->len *= 2;
+            }
+            bufinfo->typecode = 'B';
+        }
     }
     else if (display->get_direct16())
     {
