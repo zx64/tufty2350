@@ -1,5 +1,7 @@
 #include "st7789.hpp"
 
+#include "pico/time.h"
+
 #include "py/runtime.h"
 
 namespace pimoroni {
@@ -337,12 +339,14 @@ namespace pimoroni {
         }
   }
 
-  void ST7789::direct8_prepare(bool core1) {
+  uint32_t ST7789::direct8_prepare(bool core1) {
       if (!direct8)
       {
-          return;
+          return 0;
       }
+      uint64_t start = time_us_64();
       wait_for_dma();
+      uint32_t ticks = (uint32_t)(time_us_64() - start);
 
       // In this mode, the framebuffer array is divided up into two regions
       // [user half 320 * 240 * 2] [display half 320 * 240 * 2]
@@ -384,6 +388,8 @@ namespace pimoroni {
       {
           framebuffer_offset = num_pixels * sizeof(uint16_t);
       }
+
+      return ticks;
   }
 
   void ST7789::set_direct16(bool direct16) {
