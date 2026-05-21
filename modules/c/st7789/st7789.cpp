@@ -194,7 +194,7 @@ namespace pimoroni {
     gpio_put(cs, 1);
   }
 
-  void ST7789::update() {
+  uint32_t ST7789::update() {
     // Determine clock divider
     const uint32_t sys_clk_hz = clock_get_hz(clk_sys);
 
@@ -203,7 +203,10 @@ namespace pimoroni {
       pio_sm_set_clkdiv(parallel_pio, parallel_sm, fmax(1.0f, float(sys_clk_hz) / max_pio_clk));
     }
 
+    uint32_t ticks = 0;
+    uint64_t start = time_us_64();
     wait_for_dma();
+    ticks += (uint32_t)(time_us_64() - start);
 
     // Can start preparing this before waiting for vsync but still has to be after the
     // previous transfer has completed
@@ -218,11 +221,13 @@ namespace pimoroni {
 
     // Wait for vsync
     if (use_vsync) {
+      start = time_us_64();
       while (gpio_get(vsync) == 0) {
   #ifdef mp_event_handle_nowait
         mp_event_handle_nowait();
   #endif
       }
+      ticks += (uint32_t)(time_us_64() - start);
     }
 
     uint8_t cmd = reg::RAMWR;
@@ -283,6 +288,8 @@ namespace pimoroni {
     // Yeet the last column into the abyss and save a little time
     // wait_for_dma();
     // gpio_put(cs, 1);
+
+    return ticks;
   }
 
   bool ST7789::get_mode() {

@@ -47,8 +47,7 @@ mp_obj_t st7789___del__(mp_obj_t self_in) {
 
 mp_obj_t st7789_update(mp_obj_t self_in) {
     (void)self_in;
-    display->update();
-    return mp_const_none;
+    return MP_OBJ_NEW_SMALL_INT(display->update());
 }
 
 mp_obj_t st7789_command(mp_obj_t self_in, mp_obj_t reg_in, mp_obj_t data_in) {

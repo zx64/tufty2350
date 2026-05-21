@@ -116,7 +116,7 @@ namespace pimoroni {
       }
     }
 
-    void update();
+    uint32_t update();
     void set_backlight(uint8_t brightness);
     void set_mode(bool mode);
     void set_direct8(bool direct8, bool dual_layer);
