@@ -54,11 +54,15 @@ extern "C" {
       return brush;
     }
 
-    // if(n_args == 1 && mp_obj_is_int(args[0])) {
-    //   brush_obj_t *brush = mp_obj_malloc(brush_obj_t, &type_brush);
-    //   brush->brush = m_new_class(color_brush_t, mp_obj_get_uint(args[0]));
-    //   return brush;
-    // }
+    if(n_args == 1 && mp_obj_is_int(args[0])) {
+      uint32_t c = mp_obj_get_uint(args[0]);
+      if (c <= 0xFFFF)
+      {
+          brush_obj_t *brush = mp_obj_malloc(brush_obj_t, &type_brush);
+          brush->brush = m_new_class(direct16_brush_t, (uint16_t)c);
+          return brush;
+      }
+    }
 
     /*
     if(n_args >= 3 && mp_obj_is_int(args[0]) && mp_obj_is_int(args[1]) && mp_obj_is_int(args[2])) {

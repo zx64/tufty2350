@@ -18,6 +18,7 @@ list(APPEND SOURCES
   ${CMAKE_CURRENT_LIST_DIR}/algorithms/dda.cpp
   ${CMAKE_CURRENT_LIST_DIR}/brushes/pattern.cpp
   ${CMAKE_CURRENT_LIST_DIR}/brushes/color.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/brushes/direct16.cpp
   ${CMAKE_CURRENT_LIST_DIR}/brushes/image.cpp
   ${CMAKE_CURRENT_LIST_DIR}/filters/blur.cpp
   ${CMAKE_CURRENT_LIST_DIR}/filters/dither.cpp

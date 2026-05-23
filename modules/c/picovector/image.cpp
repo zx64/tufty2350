@@ -36,6 +36,7 @@ namespace picovector {
     _managed_buffer = true;
     _bytes_per_pixel = this->_has_palette ? sizeof(uint8_t) : sizeof(uint32_t);
     _row_stride = w * _bytes_per_pixel;
+    _col_stride = h * _bytes_per_pixel;
     _buffer = PV_MALLOC(this->buffer_size());
     if(_has_palette) {
       _palette.resize(256);
@@ -52,6 +53,7 @@ namespace picovector {
     _managed_buffer = false;
     _bytes_per_pixel = this->_has_palette ? sizeof(uint8_t) : sizeof(uint32_t);
     _row_stride = w * _bytes_per_pixel;
+    _col_stride = h * _bytes_per_pixel;
     if(_has_palette) {
       _palette.resize(256);
     }

@@ -50,6 +50,7 @@ namespace picovector {
       void              *_buffer = nullptr;
       bool               _managed_buffer = false;
       size_t             _row_stride;
+      size_t             _col_stride;
       size_t             _bytes_per_pixel;
 
       rect_t             _bounds;
@@ -81,6 +82,9 @@ namespace picovector {
       image_t window(rect_t r);
       inline void* ptr(int x, int y) const {
         return (uint8_t *)(this->_buffer) + (x * this->_bytes_per_pixel) + (y * this->_row_stride);
+      }
+      inline void* ptrT(int x, int y) const {
+        return (uint8_t *)(this->_buffer) + (y * this->_bytes_per_pixel) + (x * this->_col_stride);
       }
       uint32_t row_stride();
 

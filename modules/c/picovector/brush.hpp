@@ -48,4 +48,17 @@ namespace picovector {
     masked_span_func_t masked_span_func();
   };
 
+  void direct16_brush_span_func(image_t *target, brush_t *brush, int x, int y, int w);
+  void direct16_brush_masked_span_func(image_t *target, brush_t *brush, int x, int y, int w, uint8_t *mask);
+  class direct16_brush_t : public brush_t {
+  public:
+    uint16_t c;
+
+    direct16_brush_t(const uint16_t c);
+    direct16_brush_t(const color_t& c);
+    span_func_t span_func();
+    masked_span_func_t masked_span_func();
+  };
+
+
 }
