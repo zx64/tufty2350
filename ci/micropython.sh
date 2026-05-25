@@ -147,7 +147,7 @@ function ci_cmake_build {
 
     BUILD_DIR="$CI_BUILD_ROOT/build-$BOARD"
     ccache --zero-stats || true
-    cmake --build $BUILD_DIR -j ${CMAKE_BUILD_PARALLEL_LEVEL:-2}
+    cmake --build $BUILD_DIR -j ${CMAKE_BUILD_PARALLEL_LEVEL:-2} || return 1
     ccache --show-stats || true
 
     if [ -z ${CI_RELEASE_FILENAME+x} ]; then
