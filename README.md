@@ -2,9 +2,10 @@
 
 Documentation and examples are being developed in https://github.com/zx64/direct816-demos
 
-GitHub Actions are enabled, preview builds should be downloadable from there.
+Builds for specific commits can be fetched from the Actions tab, occasional snapshots from
+the Releases section.
 
-I'll eventually promote builds from that to releases for easier access.
+Consult the README.md of the above repo to get a better idea of current status.
 
 Original README.md continues:
 
