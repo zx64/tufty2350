@@ -27,6 +27,7 @@ include(pimoroni_i2c/micropython)
 
 include(modules/c/st7789/micropython)
 include(modules/c/picovector/micropython)
+include(modules/c/direct816/micropython)
 
 # Build picovector for Pico
 target_compile_definitions(usermod_picovector INTERFACE TUFTY=1 PICO=1)
