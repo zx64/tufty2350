@@ -47,7 +47,7 @@ def generate_palette(f: Callable[[int], tuple[int, int, int]], count=max_pal):
 
 
 def load_palette(filename: str) -> list[int]:
-    temp = array("H", [0] * max_pal)
+    temp = array("H", bytearray(max_pal * 2))
     with open(filename, "rb") as f:
         size = f.readinto(temp)
         if size > 512:
@@ -71,18 +71,14 @@ def make_palette_cycle(palette: list) -> list:
     return palette
 
 
-def zeroes(n: int) -> list[int]:
-    return [0 for _ in range(n)]
-
-
 @micropython.viper
 def convert_pv_image16(img: object):
     iwidth = int(img.width)
     iheight = int(img.height)
     isize = uint(iwidth * iheight)
 
-    pixels = array("H", zeroes(isize))
-    mask = array("B", zeroes(isize))
+    pixels = array("H", bytearray(2 * isize))
+    mask = array("B", bytearray(isize))
 
     dst_width = uint(iheight)
     dst_height = uint(iwidth)
