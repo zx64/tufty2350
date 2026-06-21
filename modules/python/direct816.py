@@ -77,15 +77,15 @@ def convert_pv_image16(img: object):
     iheight = int(img.height)
     isize = uint(iwidth * iheight)
 
-    pixels = array("H", bytearray(2 * isize))
-    mask = array("B", bytearray(isize))
+    pixelbytes = bytearray(2 * isize)
+    mask = bytearray(isize)
 
     dst_width = uint(iheight)
     dst_height = uint(iwidth)
 
     src: ptr32 = ptr32(img)
 
-    dst: ptr16 = ptr16(pixels)
+    dst: ptr16 = ptr16(pixelbytes)
 
     for y in range(iheight):
         for x in range(iwidth):
@@ -96,7 +96,7 @@ def convert_pv_image16(img: object):
             dst[x * iheight + y] = p16
             mask[x * iheight + y] = 1 if int(p32 >> 24) == 255 else 0
 
-    return pixels, mask, dst_width, dst_height
+    return pixelbytes, mask, dst_width, dst_height
 
 
 @micropython.viper
@@ -106,6 +106,8 @@ def blit_pv_image16(img, x: int, y: int, masked: bool, darken: bool):
     if y >= HEIGHT:
         return
 
+    pixelbytes = img[0]
+    maskbytes = img[1]
     iwidth = int(img[2])
     stride = uint(iwidth)
     x_skip = uint(0)
@@ -131,8 +133,8 @@ def blit_pv_image16(img, x: int, y: int, masked: bool, darken: bool):
 
     origin = x + WIDTH * y
 
-    src = ptr16(uint(ptr16(img[0])) + (x_skip + y_skip * stride) * BYTES_PER_PIXEL)
-    mask = ptr8(uint(ptr8(img[1])) + (x_skip + y_skip * stride))
+    src = ptr16(uint(ptr16(pixelbytes)) + (x_skip + y_skip * stride) * BYTES_PER_PIXEL)
+    mask = ptr8(uint(ptr8(maskbytes)) + (x_skip + y_skip * stride))
     dst = ptr16(uint(ptr16(display)) + origin * BYTES_PER_PIXEL)
 
     if masked:
